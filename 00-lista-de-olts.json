@@ -1,0 +1,13 @@
+[
+    {
+      "nome": "OLT-",
+      "endereco": "ip",
+      "caminho": ["/DEFAULT/4. OLTs/Datacom/{grupo}"]
+    },
+    {
+      "nome": "OLT-",
+      "endereco": "ip",
+      "caminho": ["/DEFAULT/4. OLTs/Datacom/{grupo}"]
+    }
+  ]
+  

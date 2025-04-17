@@ -1,0 +1,10 @@
+{
+    "login_password": "senha-de-acesso-web",
+    "ssh": {
+      "username": "user-olt/radius",
+      "password": "senha-olt/radius",
+      "port": "22-informar-porta-padrao"
+    },
+    "secret_key": "minhasecretakey123"
+  }
+  
