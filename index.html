@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>OLT - Relatorio e Monitoramento</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #17191b;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      overflow-x: hidden;
+    }
+    .container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 265px;
+      background-color: #323c43;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+      border-right: 1px solid #444;
+      transition: width .3s ease;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .sidebar.collapsed {
+      width: 50px;
+    }
+    .sidebar.collapsed .sidebar-footer {
+      display: none;
+    }
+    .sidebar-header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 10px 15px;
+      background-color: #323c43;
+      border-bottom: 1px solid #444;
+    }
+    .toggle-btn, .execute-btn {
+      background-color: #712f26;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 5px 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .toggle-btn:hover, .execute-btn:hover {
+      background-color: #8a3a30;
+    }
+    .sidebar-content {
+      padding: 15px;
+      flex-grow: 1;
+    }
+    .sidebar.collapsed .sidebar-content {
+      display: none;
+    }
+    .sidebar-form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .sidebar-form label {
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+    .sidebar-form select, .execute-container button {
+      width: 100%;
+      height: 40px;
+    }
+    .sidebar-form input[type="text"] {
+      padding: 5px;
+      border: 1px solid #444;
+      border-radius: 3px;
+      color: #000;
+      background-color: #ccc;
+    }
+    .execute-container {
+      margin-top: 15px;
+    }
+    .execute-container .line {
+      margin-bottom: 10px;
+    }
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background-color: #000;
+    }
+    .top-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background-color: #232323;
+      border-bottom: 1px solid #444;
+      color: #ccc;
+      padding: 15px;
+      position: relative;
+    }
+    .center-title {
+      text-align: center;
+    }
+    .center-title small {
+      font-size: 12px;
+    }
+    #stopButton {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background-color: #cc7722;
+      color: #000;
+      border: none;
+      border-radius: 3px;
+      padding: 5px 8px;
+      cursor: pointer;
+      display: none;
+      font-weight: bold;
+    }
+    #stopButton:hover {
+      background-color: #e6994c;
+    }
+    .exec-info {
+      background-color: #232323;
+      padding: 15px;
+      font-size: 14px;
+      border-bottom: 1px solid #444;
+    }
+    .table-container {
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+      overflow-x: auto;
+      padding: 10px;
+      box-sizing: border-box;
+      background-color: #000;
+      scrollbar-color: #555 #2e2e2e;
+      scrollbar-width: thin;
+      position: relative;
+    }
+    .table-container::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    .table-container::-webkit-scrollbar-track {
+      background: #2e2e2e;
+    }
+    .table-container::-webkit-scrollbar-thumb {
+      background-color: #555;
+      border-radius: 10px;
+      border: 2px solid #2e2e2e;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      color: #fff;
+      background-color: #000;
+    }
+    th, td {
+      border: 1px solid #fff;
+      padding: 8px;
+      white-space: nowrap;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      background-color: #333;
+      cursor: pointer;
+      z-index: 1;
+    }
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #232323;
+      border-top: 1px solid #444;
+      padding: 15px;
+      flex-shrink: 0;
+    }
+    .bottom-left, .bottom-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bottom-right {
+      margin-left: auto;
+    }
+    .bottom-bar button {
+      background-color: #454545;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 7px 12px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .bottom-bar button:hover {
+      background-color: #8a3a30;
+    }
+    /* Botão de Histórico de Relatórios na sidebar */
+    .history-btn {
+      background-color: #8A3A30;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 7px 12px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .history-btn:hover {
+      background-color: #aa4a3e;
+    }
+    #searchBox {
+      padding: 5px;
+      border: 1px solid #444;
+      border-radius: 3px;
+      color: #000;
+      background-color: #ccc;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background-color: #17191b;
+      padding: 20px;
+      border: 1px solid #444;
+      border-radius: 5px;
+      text-align: center;
+    }
+    /* Estilo para o modal de histórico com calendário */
+    #historyModal .modal-content {
+      width: 90%;
+      max-width: 800px;
+      height: 80%;
+    }
+    #historyModal input[type="date"] {
+      padding: 5px;
+      font-size: 16px;
+    }
+    /* Estilo para os botões dos modais */
+    .modal-content button {
+      background-color: #8A3A30;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 7px 12px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .modal-content button:hover {
+      background-color: #aa4a3e;
+    }
+    #loadingMessage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0,0,0,0.8);
+      padding: 20px;
+      z-index: 1000;
+      display: none;
+      color: #fff;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <button id="toggleSidebarButton" class="toggle-btn">⬅</button>
+      </div>
+      <div class="sidebar-content">
+        <form class="sidebar-form" id="oltForm" method="post">
+          {% if error_message %}
+            <p style="color:red;font-weight:bold;">{{ error_message }}</p>
+          {% endif %}
+          <input type="hidden" name="action" id="action" value="report">
+          <input type="hidden" name="mac_search" id="mac_search" value="">
+          <input type="hidden" name="mac_option" id="mac_option" value="">
+          <input type="hidden" name="exec_info" id="exec_info" value="">
+          <div>
+            <label for="group">Localidade:</label>
+            <select name="group" id="group">
+              {% for group in groups %}
+                <option value="{{ group }}" {% if selected_group == group %}selected{% endif %}>{{ group }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="olt">OLT:</label>
+            <select name="olt" id="olt"></select>
+          </div>
+          <!-- Botão Histórico de Relatórios reposicionado -->
+          <div>
+            <button id="historyButton" class="history-btn" type="button" style="max-height: 300px; overflow-y: auto; text-align: left;">
+              Histórico de Relatórios
+            </button>
+          </div>
+          <input type="hidden" name="interface" id="interface">
+          <div class="execute-container">
+            <div class="line">
+              <button id="executeButton" class="execute-btn" type="button">Gerar Relatório</button>
+            </div>
+            <div class="line">
+              <button id="findMacButton" class="execute-btn" type="button">Pesquisar MAC Roteador</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="main-content">
+      <div class="top-bar">
+        <div class="center-title">
+          <div>OLT - Relatórios e Monitoramento</div>
+          <small>{{ marca }}</small>
+        </div>
+        <button id="stopButton">Parar</button>
+      </div>
+      <div id="execInfo" class="exec-info">{{ exec_info|safe }}</div>
+      <div id="result-container" class="table-container">
+        <div id="loadingMessage">Realizando Busca...</div>
+        {% if result_table %}
+          {{ result_table|safe }}
+        {% endif %}
+      </div>
+      <div class="bottom-bar">
+        <!-- A área de filtragem será exibida se houver resultado de relatório ou histórico -->
+        <div class="bottom-left" id="bottomLeft" {% if result_table %}style="display: flex;"{% else %}style="display: none;"{% endif %}>
+          <input type="text" id="searchBox" placeholder="🔎 Buscar...">
+          <button id="filterButton">➡Filtrar Pesquisa</button>
+          <button id="problemFilterButton">Identificar Problemas</button>
+        </div>
+        <div class="bottom-right">
+          <button id="saveCsvButton">Salvar CSV</button>
+          <button id="clearResultButton">Limpar Resultado</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para escolher PON -->
+  <div id="ponModal" class="modal-overlay">
+    <div class="modal-content">
+      <p>Informe a Pon</p>
+      <input type="text" id="modalInterface" placeholder="Ex: 1/1 ou 1/1/X">
+      <div style="margin-top:15px;">
+        <button id="modalConfirmButton">Confirmar</button>
+        <button id="modalCancelButton">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para pesquisar MAC -->
+  <div id="macModal" class="modal-overlay">
+    <div class="modal-content">
+      <p>Pesquisar MAC Routeador</p>
+      <div>
+        <label><input type="radio" name="modalMacOption" value="all" checked> Tudo</label><br>
+        <label><input type="radio" name="modalMacOption" value="locality"> Localidade</label><br>
+        <label><input type="radio" name="modalMacOption" value="single"> Somente Nessa</label>
+      </div>
+      <!-- Bloco separado para o input -->
+      <div style="margin-top:10px;">
+        <input type="text" id="modalMacInput" placeholder="Informe o MAC do roteador">
+      </div>
+      <div style="margin-top:15px;">
+        <button id="modalMacConfirmButton">Confirmar</button>
+        <button id="modalMacCancelButton">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Histórico de Relatórios com calendário -->
+  <div id="historyModal" class="modal-overlay">
+    <div class="modal-content">
+      <div style="display: flex; flex-direction: column; height: 100%;">
+        <div style="flex: 0 0 auto; text-align: center; margin-bottom: 10px;">
+          <p>Histórico de Relatórios</p>
+          <input type="date" id="historyDate" lang="pt-BR" style="padding: 5px; font-size: 16px;">
+          <button id="filterByDateButton" style="padding:5px 10px; margin-left: 10px;">Filtrar</button>
+        </div>
+        <div id="historyList" style="flex: 1 1 auto; overflow-y:auto; text-align: left;"></div>
+        <div style="flex: 0 0 auto; margin-top:10px; text-align:center;">
+          <button id="historyCloseButton">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function formatDateDMY(date){
+      let d = date.getDate(), m = date.getMonth()+1, y = date.getFullYear();
+      return (d<10?"0"+d:d)+"/"+(m<10?"0"+m:m)+"/"+y;
+    }
+    function formatTime(date){
+      let h = date.getHours(), min = date.getMinutes(), s = date.getSeconds();
+      return (h<10?"0"+h:h)+":"+(min<10?"0"+min:min)+":"+(s<10?"0"+s:s);
+    }
+    let sidebarOpen = true;
+    const toggleSidebarButton = document.getElementById('toggleSidebarButton'),
+          sidebar = document.getElementById('sidebar');
+    if(toggleSidebarButton && sidebar){
+      toggleSidebarButton.addEventListener('click', function(){
+        sidebarOpen
+          ? (sidebar.classList.add('collapsed'), toggleSidebarButton.textContent='➡', sidebarOpen=false)
+          : (sidebar.classList.remove('collapsed'), toggleSidebarButton.textContent='⬅', sidebarOpen=true)
+      });
+    }
+    function showStopButton(){
+      document.getElementById('stopButton').style.display='block';
+    }
+    function hideStopButton(){
+      document.getElementById('stopButton').style.display='none';
+    }
+    const executeButton = document.getElementById('executeButton'),
+          ponModal = document.getElementById('ponModal'),
+          modalConfirmButton = document.getElementById('modalConfirmButton'),
+          modalCancelButton = document.getElementById('modalCancelButton'),
+          modalInterface = document.getElementById('modalInterface'),
+          hiddenInterface = document.getElementById('interface'),
+          oltForm = document.getElementById('oltForm');
+    executeButton.addEventListener('click', function(){
+      ponModal.style.display = 'flex';
+      modalInterface.value = '';
+      modalInterface.focus();
+    });
+    modalConfirmButton.addEventListener('click', function(){
+      const ponValue = modalInterface.value.trim();
+      if(!ponValue){
+        alert('Por favor, informe a Pon.');
+        return;
+      }
+      hiddenInterface.value = ponValue;
+      ponModal.style.display = 'none';
+      document.getElementById('action').value = 'report';
+      const groupSelect = document.getElementById("group"),
+            groupText = groupSelect.options[groupSelect.selectedIndex].value,
+            oltSelect = document.getElementById("olt"),
+            oltText = oltSelect.options[oltSelect.selectedIndex].text,
+            now = new Date(),
+            timeStr = formatTime(now),
+            dateStr = formatDateDMY(now),
+            execMessage = "Localidade: " + groupText + " - OLT: " + oltText + " - Relatório da PON: " + ponValue + " - Horário: " + timeStr + " Data: " + dateStr;
+      document.getElementById('execInfo').textContent = execMessage;
+      document.getElementById('exec_info').value = execMessage;
+      document.getElementById('loadingMessage').style.display = 'block';
+      showStopButton();
+      oltForm.submit();
+    });
+    modalCancelButton.addEventListener('click', function(){
+      ponModal.style.display = 'none';
+    });
+    const findMacButton = document.getElementById('findMacButton'),
+          macModal = document.getElementById('macModal'),
+          modalMacConfirmButton = document.getElementById('modalMacConfirmButton'),
+          modalMacCancelButton = document.getElementById('modalMacCancelButton'),
+          modalMacInput = document.getElementById('modalMacInput');
+    findMacButton.addEventListener('click', function(){
+      macModal.style.display = 'flex';
+      modalMacInput.value = '';
+      modalMacInput.focus();
+    });
+    modalMacConfirmButton.addEventListener('click', function(){
+      const macValue = modalMacInput.value.trim();
+      if(!macValue){
+        alert('Por favor, informe o MAC do roteador.');
+        return;
+      }
+      document.getElementById('action').value = 'mac_search';
+      document.getElementById('mac_search').value = macValue;
+      const selectedOption = document.querySelector('input[name="modalMacOption"]:checked');
+      if(selectedOption){
+        document.getElementById('mac_option').value = selectedOption.value;
+      }
+      const now = new Date(),
+            timeStr = formatTime(now),
+            dateStr = formatDateDMY(now);
+      document.getElementById('execInfo').textContent = "MAC Pesquisado: " + macValue + " - Range: " + (selectedOption.value==="all" ? "Todas" : (selectedOption.value==="locality" ? "Localidade" : document.getElementById("olt").options[document.getElementById("olt").selectedIndex].text)) + " - Horário: " + timeStr + " Data: " + dateStr;
+      macModal.style.display = 'none';
+      document.getElementById('result-container').innerHTML = '<div id="loadingMessage">Realizando Busca...</div>';
+      // Ocultar a área de filtragem durante a pesquisa de MAC
+      document.getElementById('bottomLeft').style.display = 'none';
+      showStopButton();
+      const formData = new FormData(oltForm);
+      fetch('/mac_search_stream', { method:'POST', body: formData })
+      .then(response => {
+        const reader = response.body.getReader(),
+              decoder = new TextDecoder();
+        function read(){
+          return reader.read().then(({done, value}) => {
+            if(done){
+              hideStopButton();
+              document.getElementById('loadingMessage').style.display = 'none';
+              return;
+            }
+            const chunk = decoder.decode(value, {stream:true});
+            document.getElementById('result-container').insertAdjacentHTML('beforeend', '<pre>' + chunk + '</pre>');
+            return read();
+          });
+        }
+        return read();
+      })
+      .catch(err => {
+        console.error('Erro no streaming:', err);
+        hideStopButton();
+        document.getElementById('loadingMessage').style.display = 'none';
+      });
+    });
+    modalMacCancelButton.addEventListener('click', function(){
+      macModal.style.display = 'none';
+    });
+    const stopButton = document.getElementById('stopButton');
+    stopButton.addEventListener('click', function(){
+      fetch('/cancel_execution', { method:'POST' })
+        .then(response => response.text())
+        .then(data => {
+          alert("Execução cancelada pelo usuário.");
+          document.getElementById('loadingMessage').style.display = 'none';
+          hideStopButton();
+        })
+        .catch(err => console.error('Erro ao cancelar execução:', err));
+    });
+    function captureAndBindTable(){
+      const table = document.querySelector('#result-container table');
+      if(!table) return;
+      captureTableData(table);
+      const headers = table.querySelectorAll('thead th');
+      headers.forEach((header, index) => {
+        header.addEventListener('click', () => sortColumn(index));
+      });
+    }
+    document.addEventListener('DOMContentLoaded', function(){
+      const loadingMsg = document.getElementById('loadingMessage');
+      if(loadingMsg) loadingMsg.style.display = 'none';
+      const table = document.querySelector('#result-container table');
+      if(table){
+        captureTableData(table);
+        renderTableData(baseData);
+        const headers = table.querySelectorAll('thead th');
+        headers.forEach((header, index) => {
+          header.addEventListener('click', () => sortColumn(index));
+        });
+      }
+      const filterButton = document.getElementById('filterButton');
+      if(filterButton) filterButton.addEventListener('click', applyFilter);
+      const problemFilterButton = document.getElementById('problemFilterButton');
+      if(problemFilterButton) problemFilterButton.addEventListener('click', applyProblemFilter);
+      const saveCsvButton = document.getElementById('saveCsvButton');
+      if(saveCsvButton) saveCsvButton.addEventListener('click', saveCsv);
+      const clearResultButton = document.getElementById('clearResultButton');
+      if(clearResultButton) clearResultButton.addEventListener('click', clearResult);
+    });
+    let baseData = [], currentData = [], originalData = [], lastSortedColumn = null, sortOrder = 'asc', filterStage = 0, problemFilterStage = 0;
+    const DAYS_LIMIT = 60, RX_THRESHOLD = -24.99;
+    function captureTableData(table){
+      const tbody = table.querySelector('tbody');
+      if(!tbody) return;
+      const rows = Array.from(tbody.rows);
+      originalData = rows.map(row => Array.from(row.cells).map(cell => cell.innerText.trim()));
+      baseData = [...originalData];
+      currentData = [...baseData];
+    }
+    function renderTableData(data){
+      const table = document.querySelector('#result-container table');
+      if(!table) return;
+      const tbody = table.querySelector('tbody');
+      if(!tbody) return;
+      tbody.innerHTML = '';
+      data.forEach(rowArr => {
+        const tr = document.createElement('tr');
+        rowArr.forEach(cellVal => {
+          const td = document.createElement('td');
+          td.textContent = cellVal;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+      currentData = [...data];
+    }
+    function sortColumn(colIndex){
+      if(colIndex !== lastSortedColumn){
+        lastSortedColumn = colIndex;
+        sortOrder = 'asc';
+        renderTableData(baseData);
+      } else {
+        sortOrder = (sortOrder === 'asc') ? 'desc' : 'asc';
+      }
+      let dataToSort = [...currentData],
+          isNumeric = dataToSort.every(row => !isNaN(parseFloat(row[colIndex])));
+      dataToSort.sort((a, b) => {
+        const textA = a[colIndex],
+              textB = b[colIndex];
+        return isNumeric ? parseFloat(textA) - parseFloat(textB) : textA.localeCompare(textB);
+      });
+      if(sortOrder === 'desc') dataToSort.reverse();
+      renderTableData(dataToSort);
+    }
+    function applyFilter(){
+      const searchBox = document.getElementById('searchBox'),
+            filterButton = document.getElementById('filterButton');
+      if(!searchBox) return;
+      const text = searchBox.value.trim().toLowerCase();
+      switch(filterStage){
+        case 0:
+          if(!text){
+            alert("Digite algo para filtrar!");
+            return;
+          }
+          let filtered1 = originalData.filter(row => row.some(cell => cell.toLowerCase().includes(text)));
+          baseData = filtered1;
+          renderTableData(baseData);
+          filterStage = 1;
+          filterButton.textContent = 'Pesquisa Filtrada';
+          filterButton.style.backgroundColor = '#ff7f7f';
+          break;
+        case 1:
+          function countOccurrences(str, sub){
+            let count = 0, pos = str.indexOf(sub);
+            while(pos !== -1){
+              count++;
+              pos = str.indexOf(sub, pos + sub.length);
+            }
+            return count;
+          }
+          let regexDays = /(\d+)\s+days/i;
+          let filtered2 = baseData.filter(row => {
+            let rowStr = row.join(" ").toLowerCase(),
+                unkCount = countOccurrences(rowStr, "unknown"),
+                naCount = countOccurrences(rowStr, "n/a"),
+                hasTooManyDays = false,
+                match = regexDays.exec(row.join(" "));
+            if(match){
+              let days = parseInt(match[1], 10);
+              if(days > DAYS_LIMIT) hasTooManyDays = true;
+            }
+            return (unkCount <= 3 && naCount <= 3 && !hasTooManyDays);
+          });
+          baseData = filtered2;
+          renderTableData(baseData);
+          filterStage = 2;
+          filterButton.textContent = 'Pesquisa F.(ativos)';
+          filterButton.style.backgroundColor = '#ff7f7f';
+          break;
+        case 2:
+          baseData = [...originalData];
+          renderTableData(baseData);
+          filterStage = 0;
+          filterButton.textContent = '➡Filtrar Pesquisa';
+          filterButton.style.backgroundColor = '';
+          break;
+      }
+    }
+    function applyProblemFilter(){
+      const problemFilterButton = document.getElementById('problemFilterButton');
+      if(!problemFilterButton) return;
+      let dataLines = [...originalData];
+      function countOccurrences(str, sub){
+        let count = 0, pos = str.indexOf(sub);
+        while(pos !== -1){
+          count++;
+          pos = str.indexOf(sub, pos + sub.length);
+        }
+        return count;
+      }
+      function filter_unknown_na(lines){
+        return lines.filter(row => {
+          let rowStr = row.join(' ').toLowerCase(),
+              unkCount = countOccurrences(rowStr, "unknown"),
+              naCount = countOccurrences(rowStr, "n/a");
+          return (unkCount <= 3 && naCount <= 3);
+        });
+      }
+      function filter_days(lines){
+        let regexDays = /(\d+)\s+days/i;
+        return lines.filter(row => {
+          let rowStr = row.join(' '),
+              match = regexDays.exec(rowStr);
+          if(match){
+            let days = parseInt(match[1], 10);
+            if(days > DAYS_LIMIT) return false;
+          }
+          return true;
+        });
+      }
+      function is_low_rx_optical_pw(row){
+        let val = parseFloat(row[5]);
+        if(isNaN(val)) return false;
+        return (val <= RX_THRESHOLD);
+      }
+      function filter_onu_down(lines){
+        return lines.filter(row => row[4].toLowerCase().includes('down'));
+      }
+      switch(problemFilterStage){
+        case 0:
+          dataLines = filter_unknown_na(dataLines);
+          dataLines = filter_days(dataLines);
+          problemFilterButton.textContent = '1. Ativos';
+          problemFilterButton.style.backgroundColor = '#ff7f7f';
+          break;
+        case 1:
+          dataLines = dataLines.filter(row => is_low_rx_optical_pw(row));
+          problemFilterButton.textContent = '2. Sinal⬆️';
+          problemFilterButton.style.backgroundColor = '#7eb37a';
+          break;
+        case 2:
+          dataLines = filter_onu_down(dataLines);
+          problemFilterButton.textContent = "3. Onu's Down";
+          problemFilterButton.style.backgroundColor = '#7f7fff';
+          break;
+        case 3:
+          dataLines = filter_onu_down(dataLines);
+          dataLines = filter_unknown_na(dataLines);
+          dataLines = filter_days(dataLines);
+          problemFilterButton.textContent = "4. Down (Ativos)";
+          problemFilterButton.style.backgroundColor = '#ffbf7f';
+          break;
+        case 4:
+          dataLines = dataLines.filter(row => is_low_rx_optical_pw(row) || row[4].toLowerCase().includes('down'));
+          dataLines = filter_unknown_na(dataLines);
+          dataLines = filter_days(dataLines);
+          problemFilterButton.textContent = "5. Ativos c(Sinal⬆️ + Down)";
+          problemFilterButton.style.backgroundColor = '#bf7fff';
+          break;
+        case 5:
+          renderTableData(originalData);
+          problemFilterButton.textContent = 'Identificar Problemas';
+          problemFilterButton.style.backgroundColor = '';
+          problemFilterStage = 0;
+          return;
+      }
+      renderTableData(dataLines);
+      problemFilterStage = (problemFilterStage + 1) % 6;
+    }
+    function saveCsv(){
+      const container = document.getElementById('result-container');
+      // Se houver uma tabela, salvar o conteúdo estruturado
+      const table = container.querySelector('table');
+      let csvContent = "";
+      if(table){
+        const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText);
+        csvContent += headers.join(';') + '\n';
+        currentData.forEach(row => {
+          csvContent += row.join(';') + '\n';
+        });
+      } else {
+        // Caso não haja tabela (ex.: resultado de "Pesquisar MAC Router")
+        const content = container.innerText;
+        if(content.trim() === ""){
+          alert('Não há resultado para salvar!');
+          return;
+        }
+        csvContent = content;
+      }
+      const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'}),
+            url = URL.createObjectURL(blob),
+            link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'resultado.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+    function clearResult(){
+      const container = document.getElementById('result-container');
+      if(container){
+        container.innerHTML = '';
+      }
+      document.getElementById('bottomLeft').style.display = 'none';
+      document.getElementById('execInfo').innerHTML = '';
+    }
+    var oltData //= {{ olts|tojson }},
+        groupSelect = document.getElementById("group"),
+        oltSelect = document.getElementById("olt"),
+        selectedOLT = "{{ selected_olt or '' }}";
+    function populateOLTSelect(){
+      var selectedGroup = groupSelect.value;
+      oltSelect.innerHTML = "";
+      oltData.forEach(function(olt){
+        if(olt.group === selectedGroup){
+          var option = document.createElement("option");
+          option.value = olt.nome;
+          option.text = olt.nome + " - " + olt.endereco;
+          if(olt.nome === selectedOLT){
+            option.selected = true;
+          }
+          oltSelect.appendChild(option);
+        }
+      });
+    }
+    groupSelect.addEventListener("change", populateOLTSelect);
+    populateOLTSelect();
+
+    // Histórico de Relatórios com calendário
+    let historyDataGlobal = [];
+    const historyModal = document.getElementById('historyModal'),
+          historyList = document.getElementById('historyList'),
+          historyCloseButton = document.getElementById('historyCloseButton'),
+          filterByDateButton = document.getElementById('filterByDateButton');
+    historyButton.addEventListener('click', function(){
+      const selectedOLTValue = document.getElementById('olt').value;
+      fetch('/history?olt=' + encodeURIComponent(selectedOLTValue))
+        .then(response => response.json())
+        .then(data => {
+          historyDataGlobal = data;
+          const today = new Date().toISOString().split('T')[0];
+          document.getElementById('historyDate').value = today;
+          renderHistoryListByDate(today);
+          historyModal.style.display = "flex";
+        })
+        .catch(err => console.error('Erro ao carregar histórico:', err));
+    });
+    filterByDateButton.addEventListener('click', function(){
+      const selectedDate = document.getElementById('historyDate').value;
+      renderHistoryListByDate(selectedDate);
+    });
+    function renderHistoryListByDate(selectedDate) {
+      historyList.innerHTML = "";
+      let filtered = historyDataGlobal.filter(item => {
+        let datePart = item.timestamp.split("T")[0];
+        return datePart === selectedDate;
+      });
+      if(filtered.length === 0) {
+        historyList.innerHTML = "<p>Nenhum relatório encontrado para esta data.</p>";
+      } else {
+        filtered.forEach(item => {
+          const div = document.createElement("div");
+          div.style.padding = "5px";
+          div.style.borderBottom = "1px solid #444";
+          div.style.cursor = "pointer";
+          const dt = new Date(item.timestamp);
+          div.textContent = formatDateDMY(dt) + ", " + formatTime(dt);
+          div.setAttribute("data-id", item.id);
+          div.setAttribute("data-timestamp", item.timestamp);
+          div.addEventListener('click', function(){
+            const reportId = this.getAttribute("data-id"),
+                  ts = this.getAttribute("data-timestamp"),
+                  dtReport = new Date(ts),
+                  formattedDate = formatDateDMY(dtReport),
+                  formattedTime = formatTime(dtReport),
+                  selectedGroup = document.getElementById('group').value;
+            document.getElementById('execInfo').textContent = "Localidade: " + selectedGroup + " - OLT: " + item.olt + " - Relatório da PON: 1/1 - Horário: " + formattedTime + " Data: " + formattedDate;
+            fetch('/load_report/' + reportId)
+              .then(response => response.text())
+              .then(reportContent => {
+                document.getElementById('result-container').innerHTML = reportContent;
+                document.getElementById('bottomLeft').style.display = 'flex';
+                historyModal.style.display = "none";
+                const newTable = document.querySelector('#result-container table');
+                if(newTable){
+                  captureTableData(newTable);
+                  const headers = newTable.querySelectorAll('thead th');
+                  headers.forEach((header, index) => {
+                    header.addEventListener('click', () => sortColumn(index));
+                  });
+                }
+              });
+          });
+          historyList.appendChild(div);
+        });
+      }
+    }
+    historyCloseButton.addEventListener('click', function(){
+      historyModal.style.display = "none";
+      document.getElementById('result-container').innerHTML = "";
+      document.getElementById('action').value = 'report';
+    });
+  </script>
+</body>
+</html>
+
