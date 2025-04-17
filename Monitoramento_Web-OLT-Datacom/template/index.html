@@ -787,7 +787,7 @@
       document.getElementById('bottomLeft').style.display = 'none';
       document.getElementById('execInfo').innerHTML = '';
     }
-    var oltData //= {{ olts|tojson }},
+    var oltData = {{ olts|tojson }},
         groupSelect = document.getElementById("group"),
         oltSelect = document.getElementById("olt"),
         selectedOLT = "{{ selected_olt or '' }}";
