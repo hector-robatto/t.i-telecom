@@ -1,0 +1,8 @@
+Nessa pasta será gerado as execuções automatizadas em arquivo csv para cada olt, em que você poderá verificar em "Histórico de relatórios"
+você pode alterar o agendamento das pesquisas na linha (594) do "olt-app-ti.py"
+
+```
+trigger = CronTrigger(hour='5,12,20', minute=30)
+```
+
+As pesquisas manuais não serão armazenadas aqui.
