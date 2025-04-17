@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+    body {
+      background-color: #17191b;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      position: relative;
+    }
+    .login-container {
+      background-color: #323c43;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      width: 300px;
+      text-align: center;
+    }
+    input[type="password"],
+    input[type="submit"] {
+      padding: 10px;
+      margin-top: 10px;
+      width: 90%;
+      border: none;
+      border-radius: 3px;
+    }
+    input[type="submit"] {
+      background-color: #712f26;
+      color: #fff;
+      cursor: pointer;
+    }
+    input[type="submit"]:hover {
+      background-color: #8a3a30;
+    }
+    .footer {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2>Login</h2>
+    {% if error %}
+      <p style="color: red;">{{ error }}</p>
+    {% endif %}
+    <form method="post">
+      <input type="password" name="password" placeholder="Senha" required>
+      <input type="submit" value="Entrar">
+    </form>
+  </div>
+  <div class="footer">
+    Desenvolvido pelo Analista de T.I Hector Robatto
+  </div>
+</body>
+</html>
+
